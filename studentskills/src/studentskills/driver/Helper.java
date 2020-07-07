@@ -1,7 +1,9 @@
 package studentskills.driver;
 
 import studentskills.util.FileProcessor;
+import studentskills.mytree.StudentRecord;
 import java.io.IOException;
+import studentskills.mytree.TreeHelper;
 
 public class Helper {
 
@@ -10,7 +12,8 @@ public class Helper {
 	 * @param input
 	 */
 	public static void process(String input) {
-
+		
+		TreeHelper treeHelper = new TreeHelper();
 		FileProcessor fp = null;
 
 		try {
@@ -39,11 +42,11 @@ public class Helper {
 
 				}
 
-				System.out.println(instruction);
+				StudentRecord.insertStudentRecord(instruction);
 				instruction = fp.poll();
 
 			}
-
+		treeHelper.bfsPrint();
 		} catch (Exception e) {
 			System.out.println(e);
 		} finally {
