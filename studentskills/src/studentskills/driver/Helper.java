@@ -11,9 +11,9 @@ public class Helper {
 	/**
 	 * @param input
 	 */
-	public static void process(String input) {
-		
-		TreeHelper treeHelper = new TreeHelper();
+	public static void process(String input){
+		StudentRecord studentRecord = new StudentRecord();
+		TreeHelper treeHelper = studentRecord.getTree();
 		FileProcessor fp = null;
 
 		try {
@@ -42,11 +42,11 @@ public class Helper {
 
 				}
 
-				StudentRecord.insertStudentRecord(instruction);
+				studentRecord.insertStudentRecord(instruction);
 				instruction = fp.poll();
 
 			}
-		treeHelper.bfsPrint();
+		treeHelper.treePrint();
 		} catch (Exception e) {
 			System.out.println(e);
 		} finally {
