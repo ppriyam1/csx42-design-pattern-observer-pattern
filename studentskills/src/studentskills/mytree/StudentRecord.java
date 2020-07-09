@@ -1,55 +1,64 @@
 package studentskills.mytree;
+import java.util.List;
+import java.util.Arrays;
 
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.ArrayList;
+
 
 public class StudentRecord implements Cloneable, SubjectI, ObserverI {
 
 	Integer bNumber;
+	int height;
 	private String firstName;
 	private String lastName;
 	private String major;
 	private Double gpa;
-	private Set<String> skills;
-	private ArrayList<StudentRecord> observers;
+	private Set<String> skills = new TreeSet<String>();
+	public static List<StudentRecord> observers = Arrays.asList( null, null);
+	private TreeHelper treeHelper = new TreeHelper();
+	private StudentRecord orignalRoot;
 	StudentRecord right;
 	StudentRecord left;
-	int height;
-	private TreeHelper treeHelper = new TreeHelper();
 
 	public StudentRecord() {
-		this.firstName = null;
-		this.lastName = null;
-		this.major = null;
-		this.skills = new TreeSet<String>();
-		this.observers = new ArrayList<StudentRecord>();
+		
 		this.height = 1;
 	}
-	
-	public void cloneStudentRecord(StudentRecord root){
-		try {
-			StudentRecord replica_Node_1 = (StudentRecord)root.clone();
-			StudentRecord replica_Node_2 = (StudentRecord)root.clone();
-			observers.add(replica_Node_1);
-			observers.add(replica_Node_2);
-		} catch(CloneNotSupportedException e) {
-			System.out.println(e);
-		}
+
+	public StudentRecord(StudentRecord studentRecord) {
+		this.bNumber = studentRecord.bNumber;
+		this.firstName = studentRecord.firstName;
+		this.lastName = studentRecord.lastName;
+		this.major = studentRecord.major;
+		this.gpa = studentRecord.gpa;
+		this.skills = studentRecord.skills;
+		this.height = studentRecord.height;
 	}
+
+	@Override
+	public Object clone() {
+		
+		return observers;
+	}
+
 	public boolean insertStudentRecord(String input) {
-		//to create new student record
+		// to create new student record
 		StudentRecord studentRecord = new StudentRecord();
 		studentRecord.formatter(input);
-		if (!treeHelper.modifyIfDuplicate(studentRecord)){
-			treeHelper.insertStudentRecord(studentRecord);
+		if(!treeHelper.modifyIfDuplicate(studentRecord, orignalRoot)) {
+		orignalRoot = treeHelper.insertStudentRecord(studentRecord, orignalRoot);
+		updateObservers(studentRecord);
+		}
+		else {
+			//notifyAll(studentRecord);
 		}
 		return true;
 	}
 
 	@Override
 	public void registerObserver(StudentRecord observerI) {
-		this.observers.add(observerI);
+		observers.add(observerI);
 	}
 
 	@Override
@@ -114,21 +123,42 @@ public class StudentRecord implements Cloneable, SubjectI, ObserverI {
 	public void setSkills(Set<String> skills) {
 		this.skills = skills;
 	}
-	
-	public ArrayList<StudentRecord> getObservers() {
+
+	public List<StudentRecord> getObservers() {
 		return observers;
 	}
 
-	public void setObservers(ArrayList<StudentRecord> observers) {
-		this.observers = observers;
+	public void setObservers(List<StudentRecord> observersI) {
+		observers = observersI;
 	}
+	
+	public void printTree() {
+		treeHelper.treePrint(orignalRoot);
+		for(int i = 0 ; i< observers.size() ; i++) {
+			System.out.println("\n Clone " + (i+1) + " -->");
+			treeHelper.treePrint(observers.get(i));
+		}
+	}
+	
 
 	public String toString() {
 		String details = this.bNumber + ":" + this.firstName + "," + this.lastName + "," + this.major + ","
 				+ this.skills.toString();
 		return details;
 	}
+
 	public TreeHelper getTree() {
 		return treeHelper;
+	}
+	
+	public void updateObservers(StudentRecord data) {
+		for(int i = 0 ; i< observers.size() ; i++) {
+			observers.set(i, treeHelper.insertStudentRecord(new StudentRecord(data), observers.get(i)));
+			
+		}
+	}
+	public void notifyll(StudentRecord record) {
+		//call modify again with the data
+		
 	}
 }

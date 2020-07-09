@@ -4,18 +4,15 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class TreeHelper{
-	
-	StudentRecord root;
 
 	/**
 	 * @param data
 	 */
-	public void insertStudentRecord(StudentRecord data) {
-
+	public StudentRecord insertStudentRecord(StudentRecord data,StudentRecord root) {
 		if (root == null) {
 			root = data;
 		} else {
-
+			
 			StudentRecord copyOfRoot = root;
 			while (copyOfRoot != null) {
 				if (data.bNumber < copyOfRoot.bNumber) {
@@ -63,6 +60,7 @@ public class TreeHelper{
 			root.right = rightRotation(root.right);
 			root = leftRotation(root);
 		}
+		return root;
 	}
 
 	/**
@@ -91,7 +89,7 @@ public class TreeHelper{
 	/**
 	 * 
 	 */
-	public void treePrint() {
+	public void treePrint(StudentRecord root) {
 
 		if (root == null) {
 			System.out.println("No records added");
@@ -126,7 +124,7 @@ public class TreeHelper{
 	 * @param data
 	 * @return
 	 */
-	public boolean modifyIfDuplicate(StudentRecord data) {
+	public boolean modifyIfDuplicate(StudentRecord data,StudentRecord root) {
 		StudentRecord copyOfRoot = root;
 		if (copyOfRoot == null) {
 			return false;

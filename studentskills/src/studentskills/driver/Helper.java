@@ -3,17 +3,15 @@ package studentskills.driver;
 import studentskills.util.FileProcessor;
 import studentskills.mytree.StudentRecord;
 import java.io.IOException;
-import studentskills.mytree.TreeHelper;
+
 
 public class Helper {
-
 
 	/**
 	 * @param input
 	 */
 	public static void process(String input){
 		StudentRecord studentRecord = new StudentRecord();
-		TreeHelper treeHelper = studentRecord.getTree();
 		FileProcessor fp = null;
 
 		try {
@@ -46,7 +44,8 @@ public class Helper {
 				instruction = fp.poll();
 
 			}
-		treeHelper.treePrint();
+		studentRecord.printTree();
+			
 		} catch (Exception e) {
 			System.out.println(e);
 		} finally {
@@ -57,5 +56,7 @@ public class Helper {
 				System.out.println(e);
 			}
 		}
+		System.out.println("END");
 	}
+	
 }
