@@ -2,6 +2,7 @@ package studentskills.mytree;
 
 import java.util.LinkedList;
 import studentskills.exceptions.StudentSkillsException;
+import studentskills.mytree.StudentRecord.Operation;
 import studentskills.exceptions.ErrorCode;
 import java.util.Queue;
 import java.util.Set;
@@ -12,7 +13,7 @@ public class TreeHelper{
 	 * @param data
 	 */
 	
-	// 
+	// Method to insert node in a tree recursively
 	public StudentRecord insertStudentRecord(StudentRecord data,StudentRecord root) {
 		if (root == null) {
 			root = data;
@@ -69,6 +70,7 @@ public class TreeHelper{
 	}
 
 	/**
+	 * 
 	 * @param node
 	 * @return
 	 */
@@ -100,6 +102,8 @@ public class TreeHelper{
 			System.out.println("No records added");
 			return;
 		}
+		printInorder(root);
+		/*
 		StudentRecord copyOfRoot = root;
 		Queue<StudentRecord> queue = new LinkedList<StudentRecord>();
 		StudentRecord temp;
@@ -116,12 +120,17 @@ public class TreeHelper{
 				queue.add(temp.right);
 			}
 
-		}
+		}*/
 	}
-
-	public void modifyRecord() {
-
-	}
+	public void printInorder(StudentRecord root) 
+	    { 
+	        if (root == null) 
+	            return; 
+	        printInorder(root.left); 
+	        System.out.println(root.toString()); 
+	        printInorder(root.right); 
+	    } 
+	
 
 	/**
 	 * if
@@ -153,6 +162,7 @@ public class TreeHelper{
 					Set<String> skills = copyOfRoot.getSkills();
 					skills.addAll(data.getSkills());
 					copyOfRoot.setSkills(skills);
+					copyOfRoot.notifyAll(Operation.MODIFY);
 					return true;
 				}
 			}
@@ -208,23 +218,24 @@ public class TreeHelper{
 		return newRoot;
 	}
 	public void modify(StudentRecord root, int bNumber, String oldValue, String newValue) throws StudentSkillsException {
-		if(modifyValues(root,bNumber,oldValue,newValue)) {
-			root.notifyAll(bNumber,oldValue,newValue);
-			//System.out.println("modified");
+		StudentRecord modifiedNode = modifyValues(root,bNumber,oldValue,newValue);
+		if(modifiedNode != null) {
+			modifiedNode.notifyAll(Operation.MODIFY);
 		}
 		else {
-			System.out.println("cannot modify");
+			System.out.println("cannot find bNumber: "+bNumber+" with value "+oldValue);
 			//throw new StudentSkillsException(ErrorCode.CANNOT_MODIFY,"Cannot Find Vlaues");
 		}
 		
 		
 	}
-	public boolean modifyValues(StudentRecord root, int bNumber, String oldValue, String newValue)  {
+	public StudentRecord modifyValues(StudentRecord root, int bNumber, String oldValue, String newValue)  {
 		StudentRecord copyOfRoot = root;
 		if (copyOfRoot == null) {
-			return false;
+			return null;
 		} else {
 			while (copyOfRoot != null) {
+				
 				if (bNumber < copyOfRoot.bNumber) {
 					if (copyOfRoot.left == null) {
 						break;
@@ -239,26 +250,26 @@ public class TreeHelper{
 					
 					if(copyOfRoot.getFirstName().equals(oldValue)){
 						copyOfRoot.setFirstName(newValue);
-						return true;
+						return copyOfRoot;
 						
 					}else if(copyOfRoot.getLastName().equals(oldValue)) {
 						copyOfRoot.setLastName(newValue);
-						return true;
+						return copyOfRoot;
 						
 					}else if(copyOfRoot.getMajor().equals(oldValue)) {
 						copyOfRoot.setMajor(newValue);
-						return true;
+						return copyOfRoot;
 						
 					}else if(copyOfRoot.getSkills().contains(oldValue)) {
 						Set<String> skills = copyOfRoot.getSkills();
 						skills.remove(oldValue);
 						skills.add(newValue);
-						return true;
+						return copyOfRoot;
 					}
-					return false;
+					return null;
 				}
 			}
-			return false;
+			return null;
 		
 		
 	}

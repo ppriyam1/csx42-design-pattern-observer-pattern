@@ -48,9 +48,10 @@ public class Helper {
 			}
 
 			myTree = studentRecord.getTree(); // origanlRoot
-			replicaTrees = studentRecord.getObservers();
+			replicaTrees = studentRecord.getReplicas();
 			replicaTree1 = replicaTrees.get(0);
 			replicaTree2 = replicaTrees.get(1);
+			System.out.println("\norignalTrees:->");
 			myTree.printTree();
 			System.out.println("\nclone1:->");
 			replicaTree1.printTree();
@@ -105,16 +106,20 @@ public class Helper {
 						}
 
 					} else {
+						//throw exception
 						System.out.println("Build tree first cannot Modify tree Empty");
 					}
 
 				} else {
-					System.out.println("ERROR: Modification Text Empty");
+					//throw exception
+					System.out.println("ERROR in \""+instruction+"\": Modification Text Empty");
+					
 				}
 
 				instruction = fp.poll();
 
 			}
+			System.out.println("\nAfter Modification");
 			myTree.printTree();
 			System.out.println("\nclone1:->");
 			replicaTree1.printTree();
