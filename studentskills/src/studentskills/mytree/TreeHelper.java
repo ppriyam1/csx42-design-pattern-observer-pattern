@@ -1,13 +1,18 @@
 package studentskills.mytree;
 
 import java.util.LinkedList;
+import studentskills.exceptions.StudentSkillsException;
+import studentskills.exceptions.ErrorCode;
 import java.util.Queue;
+import java.util.Set;
 
 public class TreeHelper{
 
 	/**
 	 * @param data
 	 */
+	
+	// 
 	public StudentRecord insertStudentRecord(StudentRecord data,StudentRecord root) {
 		if (root == null) {
 			root = data;
@@ -145,7 +150,9 @@ public class TreeHelper{
 					copyOfRoot.setLastName(data.getLastName());
 					copyOfRoot.setMajor(data.getMajor());
 					copyOfRoot.setGpa(data.getGpa());
-					copyOfRoot.setSkills(data.getSkills());
+					Set<String> skills = copyOfRoot.getSkills();
+					skills.addAll(data.getSkills());
+					copyOfRoot.setSkills(skills);
 					return true;
 				}
 			}
@@ -160,8 +167,6 @@ public class TreeHelper{
 	 * @return
 	 */
 	public StudentRecord rightRotation(StudentRecord root) {
-
-		System.out.println("------->  " + "right rotation needed");
 
 		// setting the current location of the left node to the root to be rotated
 		StudentRecord newRoot = root.left;
@@ -187,8 +192,6 @@ public class TreeHelper{
 	 */
 	public StudentRecord leftRotation(StudentRecord root) {
 
-		System.out.println("------->  " + "left rotation needed");
-
 		// setting the current location of the right node to the root to be rotated
 		StudentRecord newRoot = root.right;
 		StudentRecord newRootLeft = newRoot.left;
@@ -204,6 +207,60 @@ public class TreeHelper{
 		// returning new root
 		return newRoot;
 	}
-	
-
+	public void modify(StudentRecord root, int bNumber, String oldValue, String newValue) throws StudentSkillsException {
+		if(modifyValues(root,bNumber,oldValue,newValue)) {
+			root.notifyAll(bNumber,oldValue,newValue);
+			//System.out.println("modified");
+		}
+		else {
+			System.out.println("cannot modify");
+			//throw new StudentSkillsException(ErrorCode.CANNOT_MODIFY,"Cannot Find Vlaues");
+		}
+		
+		
+	}
+	public boolean modifyValues(StudentRecord root, int bNumber, String oldValue, String newValue)  {
+		StudentRecord copyOfRoot = root;
+		if (copyOfRoot == null) {
+			return false;
+		} else {
+			while (copyOfRoot != null) {
+				if (bNumber < copyOfRoot.bNumber) {
+					if (copyOfRoot.left == null) {
+						break;
+					}
+					copyOfRoot = copyOfRoot.left;
+				} else if (bNumber > copyOfRoot.bNumber) {
+					if (copyOfRoot.right == null) {
+						break;
+					}
+					copyOfRoot = copyOfRoot.right;
+				} else {
+					
+					if(copyOfRoot.getFirstName().equals(oldValue)){
+						copyOfRoot.setFirstName(newValue);
+						return true;
+						
+					}else if(copyOfRoot.getLastName().equals(oldValue)) {
+						copyOfRoot.setLastName(newValue);
+						return true;
+						
+					}else if(copyOfRoot.getMajor().equals(oldValue)) {
+						copyOfRoot.setMajor(newValue);
+						return true;
+						
+					}else if(copyOfRoot.getSkills().contains(oldValue)) {
+						Set<String> skills = copyOfRoot.getSkills();
+						skills.remove(oldValue);
+						skills.add(newValue);
+						return true;
+					}
+					return false;
+				}
+			}
+			return false;
+		
+		
+	}
+	}
 }

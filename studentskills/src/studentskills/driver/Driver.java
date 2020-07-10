@@ -18,8 +18,9 @@ public class Driver {
 			System.err.printf("Error: Incorrect number of arguments. Program accepts %d arguments.", REQUIRED_NUMBER_OF_CMDLINE_ARGS);
 			System.exit(0);
 		}
-		System.out.println("Hello World! Lets get started with the assignment");
-        Helper.process(args[0]);
+		Helper helper = new Helper();
+        helper.process(args[0]);
+        helper.modify(args[1]);
         
 
 	}
