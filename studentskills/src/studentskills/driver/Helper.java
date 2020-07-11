@@ -57,7 +57,7 @@ public class Helper {
 			replicaTree1.printTree();
 			System.out.println("\nclone2:->");
 			replicaTree2.printTree();
-			
+
 
 		} catch (Exception e) {
 			System.out.println(e);
@@ -113,7 +113,7 @@ public class Helper {
 				} else {
 					//throw exception
 					System.out.println("ERROR in \""+instruction+"\": Modification Text Empty");
-					
+
 				}
 
 				instruction = fp.poll();

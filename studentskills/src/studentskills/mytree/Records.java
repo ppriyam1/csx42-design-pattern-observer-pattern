@@ -18,7 +18,7 @@ public abstract class Records {
 	StudentRecord right;
 	StudentRecord left;
 	final int numOfObservers = 2;
-	
+
 	public String getFirstName() {
 		return firstName;
 	}
@@ -78,6 +78,7 @@ public abstract class Records {
 		StudentRecord replicaNode = null;
 		try{
 		replicaNode = (StudentRecord) this.clone();
+    replicaNode.setSkills(new TreeSet<String>(this.getSkills()));
 		this.observers.add(replicaNode);
 		}catch(Exception e){
 		}

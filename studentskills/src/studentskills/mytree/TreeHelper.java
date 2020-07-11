@@ -1,277 +1,194 @@
 package studentskills.mytree;
 
-import java.util.LinkedList;
-import studentskills.exceptions.StudentSkillsException;
-import studentskills.mytree.StudentRecord.Operation;
-import studentskills.exceptions.ErrorCode;
-import java.util.Queue;
-import java.util.Set;
+/**
+ *
+ * @implNote BST Implementation
+ *
+ * @see https://www.geeksforgeeks.org/binary-search-tree-set-1-search-and-insertion
+ *      https://www.geeksforgeeks.org/search-a-node-in-binary-tree
+ *
+ *
+ */
+// TODO: put the reference in README
+class StudentTree {
 
-public class TreeHelper{
+	protected final Integer id;
+	protected StudentRecord root;
 
-	/**
-	 * @param data
-	 */
-	
-	// Method to insert node in a tree recursively
-	public StudentRecord insertStudentRecord(StudentRecord data,StudentRecord root) {
-		if (root == null) {
-			root = data;
-		} else {
-			
-			StudentRecord copyOfRoot = root;
-			while (copyOfRoot != null) {
-				if (data.bNumber < copyOfRoot.bNumber) {
-					if (copyOfRoot.left == null) {
-						break;
-					}
-					copyOfRoot = copyOfRoot.left;
-				} else {
-					if (copyOfRoot.right == null) {
-						break;
-					}
-					copyOfRoot = copyOfRoot.right;
-				}
-			}
-			if (data.bNumber < copyOfRoot.bNumber) {
-				copyOfRoot.left = data;
-
-			} else {
-				copyOfRoot.right = data;
-
-			}
-			copyOfRoot.height = Math.max(height(copyOfRoot.left), height(copyOfRoot.right)) + 1;
-		}
-		root.height = Math.max(height(root.left), height(root.right)) + 1;
-
-		int balancingFactor = balancingFactor(root);
-		// System.out.println(balancingFactor+" "+ data+" root:"+root.data);
-		// Left to Right Rotation
-		if (balancingFactor > 1 && data.bNumber < root.left.bNumber) {
-			root = rightRotation(root);
-		}
-
-		// right to Left Rotation
-		if (balancingFactor < -1 && data.bNumber > root.right.bNumber) {
-			root = leftRotation(root);
-		}
-
-		// Left rotation then left to right Rotation
-		if (balancingFactor > 1 && data.bNumber > root.left.bNumber) {
-			root.left = leftRotation(root.left);
-			root = rightRotation(root);
-		}
-		// Right rotation then right to Left Rotation
-		if (balancingFactor < -1 && data.bNumber < root.right.bNumber) {
-			root.right = rightRotation(root.right);
-			root = leftRotation(root);
-		}
-		return root;
+	public StudentTree() {
+		id = Utils.getUniqueId();
+		root = null;
 	}
 
 	/**
-	 * 
-	 * @param node
-	 * @return
+	 * @return id
 	 */
-	public int height(StudentRecord node) {
-		if (node == null) {
-			return 0;
-		} else
-			return node.height;
+	public Integer getId() {
+		return id;
 	}
 
 	/**
 	 * @param node
+	 * @param key
 	 * @return
 	 */
-	public int balancingFactor(StudentRecord node) {
+	private static StudentRecord insertNode(StudentRecord node, StudentRecord key) {
+		/* A recursive function to insert a new key in BST */
 
+		/* If the tree is empty, return a new node */
 		if (node == null) {
-			return 0;
+			node = key;
+			return node;
 		}
-		return height(node.left) - height(node.right);
+
+		/* Otherwise, recur down the tree */
+		if (key.bNumber < node.bNumber)
+			node.left = insertNode(node.left, key);
+		else if (key.bNumber > node.bNumber)
+			node.right = insertNode(node.right, key);
+
+		/* return the (unchanged) node pointer */
+		return node;
 	}
 
 	/**
-	 * 
+	 * @param node
+	 * @param key
+	 * @return
 	 */
-	public void treePrint(StudentRecord root) {
+	private static boolean updateNode(StudentRecord node, StudentRecord key) {
 
+		if (node == null)
+			return false;
+
+		if (node.bNumber == key.bNumber) {
+			node = key;
+			return true;
+		}
+
+		boolean res1 = updateNode(node.left, key);
+		if (res1) {// node found, no need to look further
+			return true;
+		}
+
+		// node is not found in left, so recur on right subtree /
+		boolean res2 = updateNode(node.right, key);
+
+		return res2;
+	}
+
+	/**
+	 * @param node
+	 * @param key
+	 * @return
+	 */
+	private static boolean searchNode(StudentRecord node, StudentRecord key) {
+
+		if (node == null)
+			return false;
+
+		if (node.bNumber == key.bNumber)
+			return true;
+
+		// then recur on left sutree /
+		boolean res1 = searchNode(node.left, key);
+		if (res1) // node found, no need to look further
+			return true;
+
+		// node is not found in left, so recur on right subtree /
+		boolean res2 = searchNode(node.right, key);
+
+		return res2;
+	}
+
+	public StudentRecord findNode(final Integer bNumber, StudentRecord node) {
+		if (node == null)
+			return null;
+
+		if (bNumber.equals(node.bNumber)) {
+			return node;
+		} else {
+			StudentRecord found = findNode(bNumber, node.left); // left traversal
+
+			if (found == null)
+				found = findNode(bNumber, node.right); // right traversal
+
+			return found;
+		}
+
+	}
+
+	/**
+	 * @param node
+	 */
+	public static void printNode(StudentRecord node) {
+		if (node.left != null) {
+			printNode(node.left);
+		}
+
+		/**
+		 * Print b_number
+		 */
+		System.out.print("(" + node.bNumber + ")");
+
+		if (node.right != null) {
+			printNode(node.right);
+		}
+	}
+
+	public void insert(StudentRecord studentRecord) {
+		this.root = insertNode(this.root, studentRecord);
+		System.out.println("Added " + this.root.tree + ": " + studentRecord.toString());
+	}
+
+	public void update(StudentRecord studentRecord) {
+		updateNode(this.root, studentRecord);
+		System.out.println("Updated " + this.root.tree + ": " + studentRecord.toString());
+	}
+
+	public StudentRecord search(StudentRecord studentRecord) {
+		boolean isExists = searchNode(this.root, studentRecord);
+		return isExists ? findNode(studentRecord.bNumber, this.root) : null;
+	}
+
+	public void print() {
+		printNode(this.root);
+		System.out.println("");
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((root == null) ? 0 : root.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		StudentTree other = (StudentTree) obj;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
 		if (root == null) {
-			System.out.println("No records added");
-			return;
-		}
-		printInorder(root);
-		/*
-		StudentRecord copyOfRoot = root;
-		Queue<StudentRecord> queue = new LinkedList<StudentRecord>();
-		StudentRecord temp;
-		queue.add(copyOfRoot);
-		System.out.println(copyOfRoot.toString());
-		while (queue.isEmpty() == false) {
-			temp = queue.poll();
-			if (temp.left != null) {
-				System.out.println(temp.left.toString());
-				queue.add(temp.left);
-			}
-			if (temp.right != null) {
-				System.out.println(temp.right.toString());
-				queue.add(temp.right);
-			}
-
-		}*/
-	}
-	public void printInorder(StudentRecord root) 
-	    { 
-	        if (root == null) 
-	            return; 
-	        printInorder(root.left); 
-	        System.out.println(root.toString()); 
-	        printInorder(root.right); 
-	    } 
-	
-
-	/**
-	 * if
-	 * 
-	 * @param data
-	 * @return
-	 */
-	public boolean modifyIfDuplicate(StudentRecord data,StudentRecord root) {
-		StudentRecord copyOfRoot = root;
-		if (copyOfRoot == null) {
+			if (other.root != null)
+				return false;
+		} else if (!root.equals(other.root))
 			return false;
-		} else {
-			while (copyOfRoot != null) {
-				if (data.bNumber < copyOfRoot.bNumber) {
-					if (copyOfRoot.left == null) {
-						break;
-					}
-					copyOfRoot = copyOfRoot.left;
-				} else if (data.bNumber > copyOfRoot.bNumber) {
-					if (copyOfRoot.right == null) {
-						break;
-					}
-					copyOfRoot = copyOfRoot.right;
-				} else {
-					copyOfRoot.setFirstName(data.getFirstName());
-					copyOfRoot.setLastName(data.getLastName());
-					copyOfRoot.setMajor(data.getMajor());
-					copyOfRoot.setGpa(data.getGpa());
-					Set<String> skills = copyOfRoot.getSkills();
-					skills.addAll(data.getSkills());
-					copyOfRoot.setSkills(skills);
-					copyOfRoot.notifyAll(Operation.MODIFY);
-					return true;
-				}
-			}
-			return false;
-		}
+		return true;
 	}
 
-	/**
-	 * calculation rightRotation
-	 * 
-	 * @param root
-	 * @return
-	 */
-	public StudentRecord rightRotation(StudentRecord root) {
-
-		// setting the current location of the left node to the root to be rotated
-		StudentRecord newRoot = root.left;
-		StudentRecord newRootRight = newRoot.right;
-
-		// Rotate the root and left node to right
-		newRoot.right = root;
-		root.left = newRootRight;
-
-		// updating the height of new right node to the new root and new root itself
-		root.height = Math.max(height(root.left), height(root.right)) + 1;
-		newRoot.height = Math.max(height(newRoot.left), height(newRoot.right)) + 1;
-
-		// returning new root
-		return newRoot;
-	}
-
-	/**
-	 * calculation leftRotation
-	 * 
-	 * @param root
-	 * @return
-	 */
-	public StudentRecord leftRotation(StudentRecord root) {
-
-		// setting the current location of the right node to the root to be rotated
-		StudentRecord newRoot = root.right;
-		StudentRecord newRootLeft = newRoot.left;
-
-		// Rotate the root and right node to left
-		newRoot.left = root;
-		root.right = newRootLeft;
-
-		// updating the height of new left node to new root and new root itself
-		root.height = Math.max(height(root.left), height(root.right)) + 1;
-		newRoot.height = Math.max(height(newRoot.left), height(newRoot.right)) + 1;
-
-		// returning new root
-		return newRoot;
-	}
-	public void modify(StudentRecord root, int bNumber, String oldValue, String newValue) throws StudentSkillsException {
-		StudentRecord modifiedNode = modifyValues(root,bNumber,oldValue,newValue);
-		if(modifiedNode != null) {
-			modifiedNode.notifyAll(Operation.MODIFY);
-		}
-		else {
-			System.out.println("cannot find bNumber: "+bNumber+" with value "+oldValue);
-			//throw new StudentSkillsException(ErrorCode.CANNOT_MODIFY,"Cannot Find Vlaues");
-		}
-		
-		
-	}
-	public StudentRecord modifyValues(StudentRecord root, int bNumber, String oldValue, String newValue)  {
-		StudentRecord copyOfRoot = root;
-		if (copyOfRoot == null) {
-			return null;
-		} else {
-			while (copyOfRoot != null) {
-				
-				if (bNumber < copyOfRoot.bNumber) {
-					if (copyOfRoot.left == null) {
-						break;
-					}
-					copyOfRoot = copyOfRoot.left;
-				} else if (bNumber > copyOfRoot.bNumber) {
-					if (copyOfRoot.right == null) {
-						break;
-					}
-					copyOfRoot = copyOfRoot.right;
-				} else {
-					
-					if(copyOfRoot.getFirstName().equals(oldValue)){
-						copyOfRoot.setFirstName(newValue);
-						return copyOfRoot;
-						
-					}else if(copyOfRoot.getLastName().equals(oldValue)) {
-						copyOfRoot.setLastName(newValue);
-						return copyOfRoot;
-						
-					}else if(copyOfRoot.getMajor().equals(oldValue)) {
-						copyOfRoot.setMajor(newValue);
-						return copyOfRoot;
-						
-					}else if(copyOfRoot.getSkills().contains(oldValue)) {
-						Set<String> skills = copyOfRoot.getSkills();
-						skills.remove(oldValue);
-						skills.add(newValue);
-						return copyOfRoot;
-					}
-					return null;
-				}
-			}
-			return null;
-		
-		
-	}
+	@Override
+	public String toString() {
+		return "Tree [id=" + id + "]";
 	}
 }

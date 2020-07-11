@@ -46,7 +46,7 @@ public class StudentRecord extends Records implements Cloneable, SubjectI, Obser
 	}
 
 	protected void formatter(String input) {
-		
+
 		String[] studentDetails = input.split(":");
 		String[] details = studentDetails[1].split(",");
 		this.bNumber = Integer.parseInt(studentDetails[0]);
@@ -90,10 +90,10 @@ public class StudentRecord extends Records implements Cloneable, SubjectI, Obser
 				replicaTrees.set(i, treeHelper.insertStudentRecord(data.observers.get(i), replicaTrees.get(i)));
 				if(data.observers.get(i).observers.size() != (numOfObservers +1)) {
 					data.observers.get(i).observers.add(data);
-				}	
+				}
 			}
 		}
-		
+
 	}
 	public void update(Operation operation) {
 		if (operation == Operation.MODIFY) {
