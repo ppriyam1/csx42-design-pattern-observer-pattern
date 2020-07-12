@@ -1,194 +1,144 @@
 package studentskills.mytree;
 
-/**
- *
- * @implNote BST Implementation
- *
- * @see https://www.geeksforgeeks.org/binary-search-tree-set-1-search-and-insertion
- *      https://www.geeksforgeeks.org/search-a-node-in-binary-tree
- *
- *
- */
-// TODO: put the reference in README
-class StudentTree {
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-	protected final Integer id;
-	protected StudentRecord root;
+public class TreeHelper {
 
-	public StudentTree() {
-		id = Utils.getUniqueId();
-		root = null;
-	}
+	public static final Map<Integer, StudentTree> TreeMap = new HashMap<>();
 
 	/**
-	 * @return id
+	 * @param count
 	 */
-	public Integer getId() {
-		return id;
+	public TreeHelper() {
 	}
 
-	/**
-	 * @param node
-	 * @param key
-	 * @return
-	 */
-	private static StudentRecord insertNode(StudentRecord node, StudentRecord key) {
-		/* A recursive function to insert a new key in BST */
+	public final void init(Integer countOfReplicas) {
+		Integer counter = 0;
 
-		/* If the tree is empty, return a new node */
-		if (node == null) {
-			node = key;
-			return node;
+		while (counter < countOfReplicas) {
+			TreeMap.put(counter, new StudentTree());
+			counter++;
 		}
 
-		/* Otherwise, recur down the tree */
-		if (key.bNumber < node.bNumber)
-			node.left = insertNode(node.left, key);
-		else if (key.bNumber > node.bNumber)
-			node.right = insertNode(node.right, key);
-
-		/* return the (unchanged) node pointer */
-		return node;
+		System.out.println(TreeMap.size() + " tree has been intialized"); // TODO: logger
 	}
 
-	/**
-	 * @param node
-	 * @param key
-	 * @return
-	 */
-	private static boolean updateNode(StudentRecord node, StudentRecord key) {
+	public void display() {
+		TreeMap.forEach((k, v) -> {
+			v.print();
+		});
+	}
 
-		if (node == null)
-			return false;
+	// method to build tree recursively
+	public void buildTree(StudentRecord node, Integer counter, List<StudentRecord> list) {
 
-		if (node.bNumber == key.bNumber) {
-			node = key;
-			return true;
+		StudentRecord currentNode = node;
+		StudentRecord nextNode = null;
+
+		if ((node != null) && counter < TreeMap.size()) { // to break recursion
+			StudentTree tree = TreeMap.get(counter);
+
+			currentNode.tree = tree;
+
+			list.add(currentNode);
+
+			StudentRecord replicaNode = null;
+
+			if (list.size() < TreeMap.size()) {
+				try {
+					replicaNode = currentNode.cloneStudentRecord();
+				} catch (CloneNotSupportedException e) {
+					// TODO: throw from CustomStudentRecordException and use logger to print
+				}
+			}
+
+			nextNode = replicaNode;
+
+			buildTree(nextNode, ++counter, list);
+
+			tree.insert(node);// 0 1 2 -> 2 1 0
+			//TODO output = tree.insert(node);
+
 		}
-
-		boolean res1 = updateNode(node.left, key);
-		if (res1) {// node found, no need to look further
-			return true;
-		}
-
-		// node is not found in left, so recur on right subtree /
-		boolean res2 = updateNode(node.right, key);
-
-		return res2;
 	}
 
-	/**
-	 * @param node
-	 * @param key
-	 * @return
-	 */
-	private static boolean searchNode(StudentRecord node, StudentRecord key) {
+	public void registerListeners(List<StudentRecord> observers) {
+		System.out.println("Registering the observers"); // TODO: logger
+		observers.forEach(k -> {
+			List<StudentRecord> temp = new ArrayList<>();
 
-		if (node == null)
-			return false;
-
-		if (node.bNumber == key.bNumber)
-			return true;
-
-		// then recur on left sutree /
-		boolean res1 = searchNode(node.left, key);
-		if (res1) // node found, no need to look further
-			return true;
-
-		// node is not found in left, so recur on right subtree /
-		boolean res2 = searchNode(node.right, key);
-
-		return res2;
+			temp = observers.stream().filter(j -> j.tree.getId() != k.tree.getId()).collect(Collectors.toList());
+			k.registerObservers(temp);
+		});
 	}
 
-	public StudentRecord findNode(final Integer bNumber, StudentRecord node) {
-		if (node == null)
-			return null;
+	public void build(String input) {
+		StudentRecord node = new StudentRecord().formatter(input);
 
-		if (bNumber.equals(node.bNumber)) {
-			return node;
+		StudentRecord ifStudentRecordExists = TreeMap.get(0).search(node);
+
+		if (ifStudentRecordExists == null) { // flow: Create
+			List<StudentRecord> observers = new ArrayList<>();
+			Integer counter = 0;
+
+			buildTree(node, counter, observers);
+			registerListeners(observers);
 		} else {
-			StudentRecord found = findNode(bNumber, node.left); // left traversal
+			StudentRecord replicaNode = ifStudentRecordExists;
 
-			if (found == null)
-				found = findNode(bNumber, node.right); // right traversal
+			replicaNode.setFirstName(node.getFirstName());
+			replicaNode.setLastName(node.getLastName());
+			replicaNode.setMajor(node.getMajor());
+			replicaNode.setGradePointAverage(node.getGradePointAverage());
 
-			return found;
+			node.getSkills().forEach(skill -> {
+				if (!replicaNode.getSkills().contains(skill))
+					replicaNode.getSkills().add(skill);
+			});
+
+			// tree.update(replicaNode);
+			System.out.println("\nUpdated Tree [id=" + replicaNode.tree.getId() + "]: " + replicaNode.toString());
+
+			replicaNode.notifyAll(Operation.INSERT);
 		}
 
 	}
 
-	/**
-	 * @param node
-	 */
-	public static void printNode(StudentRecord node) {
-		if (node.left != null) {
-			printNode(node.left);
-		}
+	public void modify(String input) {
+		StudentRecord node = new StudentRecord().modifyFormatter(input);
 
-		/**
-		 * Print b_number
-		 */
-		System.out.print("(" + node.bNumber + ")");
+		TreeMap.forEach((k, v) -> {
 
-		if (node.right != null) {
-			printNode(node.right);
-		}
+			if (node.treeId == v.getId()) {
+				StudentRecord ifExistRecord = v.search(node);
+
+				StudentRecord replicaNode = ifExistRecord;
+
+				if (replicaNode.getFirstName().equals(node.originalValue)) {
+					replicaNode.setFirstName(node.newValue);
+				} else if (replicaNode.getLastName().equals(node.originalValue)) {
+					replicaNode.setLastName(node.newValue);
+				} else if (replicaNode.getMajor().equals(node.originalValue)) {
+					replicaNode.setMajor(node.newValue);
+				} else if (replicaNode.getSkills().contains(node.originalValue)) {
+					Set<String> skills = replicaNode.getSkills();
+
+					skills.remove(node.originalValue);
+					skills.add(node.newValue);
+					replicaNode.setSkills(skills);
+				}
+
+				// tree.update(replicaNode);
+				System.out.println("\nUpdated Tree [id=" + node.treeId + "]: " + replicaNode.toString());
+
+				replicaNode.notifyAll(Operation.MODIFY);
+			}
+		});
 	}
 
-	public void insert(StudentRecord studentRecord) {
-		this.root = insertNode(this.root, studentRecord);
-		System.out.println("Added " + this.root.tree + ": " + studentRecord.toString());
-	}
-
-	public void update(StudentRecord studentRecord) {
-		updateNode(this.root, studentRecord);
-		System.out.println("Updated " + this.root.tree + ": " + studentRecord.toString());
-	}
-
-	public StudentRecord search(StudentRecord studentRecord) {
-		boolean isExists = searchNode(this.root, studentRecord);
-		return isExists ? findNode(studentRecord.bNumber, this.root) : null;
-	}
-
-	public void print() {
-		printNode(this.root);
-		System.out.println("");
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result + ((root == null) ? 0 : root.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		StudentTree other = (StudentTree) obj;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		if (root == null) {
-			if (other.root != null)
-				return false;
-		} else if (!root.equals(other.root))
-			return false;
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "Tree [id=" + id + "]";
-	}
 }

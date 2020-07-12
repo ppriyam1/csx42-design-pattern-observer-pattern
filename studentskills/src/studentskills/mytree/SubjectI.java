@@ -1,10 +1,10 @@
 package studentskills.mytree;
 
+import java.util.List;
+
 public interface SubjectI {
 
-public void registerObserver();
+	public void registerObservers(List<StudentRecord> observers);
 
-public void unregisterObserver(StudentRecord observer);
-
-//public void notifyAll();
+	public void notifyAll(Operation operation);
 }
