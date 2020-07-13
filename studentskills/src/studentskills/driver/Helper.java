@@ -1,71 +1,130 @@
 package studentskills.driver;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.util.List;
 
+import studentskills.exception.ErrorCode;
+import studentskills.exception.HelperException;
+import studentskills.exception.StudentSkillException;
+import studentskills.exception.TreeHelperException;
 import studentskills.mytree.TreeHelper;
 import studentskills.util.FileProcessor;
+import studentskills.util.MyLogger;
+import studentskills.util.MyLogger.DebugLevel;
 
 public class Helper {
 
 	static TreeHelper treeHelper;
 
+	public static void setLogger(String level) {
+		MyLogger.setDebugValue(Integer.parseInt(level));
+	}
+
 	/**
 	 * @param input
+	 * @throws HelperException
+	 * @throws StudentSkillException
 	 */
-	public static void process(String fileName) {
-		final Integer countOfReplicas = 3;
+	public static void process(String fileName, List<String> outputFileNameList, String errorFileName)
+			throws HelperException {
 
 		if (!(TreeHelper.TreeMap.size() > 0)) { // Initialize Tree
 			treeHelper = new TreeHelper();
-			treeHelper.init(countOfReplicas);
+
+			try {
+				treeHelper.init(outputFileNameList);
+			} catch (TreeHelperException e) {
+				MyLogger.writeMessage(ErrorCode.INVALID_IO + ": " + e.getMessage(), DebugLevel.EXCEPTION);
+				e.printStackTrace();
+				throw new HelperException(e.getMessage());
+			}
 		}
 
 		FileProcessor fp = null;
 
+		final String PATH = "./" + fileName;
+
 		try {
-			final String PATH = "./" + fileName;
 			fp = new FileProcessor(PATH);
-			String instruction = null;
-			instruction = fp.poll(); // read next line
+		} catch (InvalidPathException | SecurityException | IOException e) {
+			MyLogger.writeMessage(ErrorCode.INVALID_IO + ": " + e.getMessage(), DebugLevel.EXCEPTION);
+			e.printStackTrace();
+			throw new HelperException(e.getMessage());
+		}
 
-			// check file empty
-			if (instruction == null || instruction.isEmpty()) {
-				// throw new ChannelPopularityException(ErrorCode.INVALID_INPUT_EMPTY, "Input
-				// file is empty");
+		String instruction = null;
+
+		try {
+			instruction = fp.poll();
+		} catch (IOException e) {
+			MyLogger.writeMessage(ErrorCode.INVALID_IO + ": " + e.getMessage(), DebugLevel.EXCEPTION);
+			e.printStackTrace();
+			throw new HelperException(e.getMessage());
+		}
+
+		// read next line
+		// check file empty
+		if (instruction == null || instruction.isEmpty()) {
+			String message = ErrorCode.INVALID_INPUT_EMPTY + ": " + "Input file is empty";
+			MyLogger.writeMessage(message, DebugLevel.EXCEPTION);
+			throw new HelperException(message);
+		}
+
+		while (instruction != null) {
+
+			if (instruction.isEmpty()) {
+				String message = ErrorCode.INVALID_INPUT_EMPTY + ": "
+						+ "Line in the input file does not follow the specified formats";
+				MyLogger.writeMessage(message, DebugLevel.EXCEPTION);
+				throw new HelperException(message);
+
 			}
 
-			while (instruction != null) {
-
-				if (instruction.isEmpty()) {
-					// throw new ChannelPopularityException(ErrorCode.INVALID_INPUT_EMPTY,
-					// "Line in the input file does not follow the specified formats");
+			if (fileName.contains("input")) {
+				try {
+					treeHelper.insert(instruction, errorFileName);
+				} catch (TreeHelperException e) {
+					MyLogger.writeMessage(e.getMessage(), DebugLevel.EXCEPTION);
+					e.printStackTrace();
+					throw new HelperException(e.getMessage());
 				}
-				if (fileName.contains("input")) {
-					treeHelper.build(instruction);
-				} else if (fileName.contains("modify")) {
+			} else if (fileName.contains("modify")) {
+				try {
 					treeHelper.modify(instruction);
-				} else {
-
+				} catch (TreeHelperException e) {
+					MyLogger.writeMessage(e.getMessage(), DebugLevel.EXCEPTION);
+					e.printStackTrace();
+					throw new HelperException(e.getMessage());
 				}
+			} else {
 
-				instruction = fp.poll();
 			}
 
-			treeHelper.display();
-
-			// treeHelper.print();
-		} catch (Exception e) {
-			System.out.println(e);
-		} finally {
 			try {
-				if (fp != null)
-					fp.close();
+				instruction = fp.poll();
 			} catch (IOException e) {
-				System.out.println(e);
+				MyLogger.writeMessage(ErrorCode.INVALID_IO + ": " + e.getMessage(), DebugLevel.EXCEPTION);
+				e.printStackTrace();
+				throw new HelperException(e.getMessage());
 			}
 		}
 
-		System.out.println("END");
 	}
 
+	public static void run(String inputFileName, String modifyFileName, List<String> outputFileNameList,
+			String errorFileName, String debugLevel) throws StudentSkillException {
+
+		setLogger(debugLevel); // configure logger
+
+		try {
+
+			process(inputFileName, outputFileNameList, errorFileName);
+			process(modifyFileName, outputFileNameList, errorFileName);
+		} catch (HelperException e) {
+			MyLogger.writeMessage(e.getMessage(), DebugLevel.EXCEPTION);
+			e.printStackTrace();
+			throw new StudentSkillException(e.getMessage());
+		}
+	}
 }

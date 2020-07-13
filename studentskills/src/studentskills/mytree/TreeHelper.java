@@ -7,6 +7,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import studentskills.exception.ErrorCode;
+import studentskills.exception.ResultException;
+import studentskills.exception.StudentRecordException;
+import studentskills.exception.TreeHelperException;
+import studentskills.util.MyLogger;
+import studentskills.util.MyLogger.DebugLevel;
+
 public class TreeHelper {
 
 	public static final Map<Integer, StudentTree> TreeMap = new HashMap<>();
@@ -17,25 +24,49 @@ public class TreeHelper {
 	public TreeHelper() {
 	}
 
-	public final void init(Integer countOfReplicas) {
+	/**
+	 * Method to initialize the tree helper which will create the tree(s) for
+	 * student records.
+	 *
+	 * @param outputFileNameList
+	 * @throws TreeHelperException
+	 */
+	public final void init(List<String> outputFileNameList) throws TreeHelperException {
 		Integer counter = 0;
 
-		while (counter < countOfReplicas) {
+		while (counter < outputFileNameList.size()) {
 			TreeMap.put(counter, new StudentTree());
+
+			if (!outputFileNameList.isEmpty() && outputFileNameList.get(counter) != null) {
+				TreeMap.get(counter).outputFileName = outputFileNameList.get(counter);
+			} else {
+				String message = ErrorCode.INVALID_INPUT_EMPTY + ": " + "Output file names are required";
+				MyLogger.writeMessage(message, DebugLevel.EXCEPTION);
+
+				throw new TreeHelperException(message);
+			}
+
 			counter++;
 		}
 
-		System.out.println(TreeMap.size() + " tree has been intialized"); // TODO: logger
+		MyLogger.writeMessage(TreeMap.size() + " tree has been intialized", MyLogger.DebugLevel.TREE_HELPER);
 	}
 
 	public void display() {
 		TreeMap.forEach((k, v) -> {
-			v.print();
+			v.show();
 		});
 	}
 
-	// method to build tree recursively
-	public void buildTree(StudentRecord node, Integer counter, List<StudentRecord> list) {
+	/**
+	 * method to build tree recursively.
+	 *
+	 * @param node
+	 * @param counter
+	 * @param list
+	 * @throws TreeHelperException
+	 */
+	public void buildTree(StudentRecord node, Integer counter, List<StudentRecord> list) throws TreeHelperException {
 
 		StudentRecord currentNode = node;
 		StudentRecord nextNode = null;
@@ -53,7 +84,9 @@ public class TreeHelper {
 				try {
 					replicaNode = currentNode.cloneStudentRecord();
 				} catch (CloneNotSupportedException e) {
-					// TODO: throw from CustomStudentRecordException and use logger to print
+					MyLogger.writeMessage(e.getMessage(), DebugLevel.EXCEPTION);
+					e.printStackTrace();
+					throw new TreeHelperException(e.getMessage());
 				}
 			}
 
@@ -61,14 +94,25 @@ public class TreeHelper {
 
 			buildTree(nextNode, ++counter, list);
 
-			tree.insert(node);// 0 1 2 -> 2 1 0
-			//TODO output = tree.insert(node);
+			try {
+				tree.insert(node); // 0 1 2 -> 2 1 0
+			} catch (ResultException e) {
+				MyLogger.writeMessage(e.getMessage(), DebugLevel.EXCEPTION);
+				e.printStackTrace();
+				throw new TreeHelperException(e.getMessage());
+			}
 
 		}
 	}
 
+	/**
+	 * Method to register observers to a subject.
+	 *
+	 * @param observers
+	 */
 	public void registerListeners(List<StudentRecord> observers) {
-		System.out.println("Registering the observers"); // TODO: logger
+
+		MyLogger.writeMessage("Registering the observers", MyLogger.DebugLevel.TREE_HELPER);
 		observers.forEach(k -> {
 			List<StudentRecord> temp = new ArrayList<>();
 
@@ -77,68 +121,106 @@ public class TreeHelper {
 		});
 	}
 
-	public void build(String input) {
-		StudentRecord node = new StudentRecord().formatter(input);
+	/**
+	 * Method to insert a node(s) based on the input from file.
+	 *
+	 * @param input
+	 * @param errorFileName
+	 * @throws TreeHelperException
+	 */
+	public void insert(String input, String errorFileName) throws TreeHelperException {
 
-		StudentRecord ifStudentRecordExists = TreeMap.get(0).search(node);
+		StudentRecord node = null;
 
-		if (ifStudentRecordExists == null) { // flow: Create
-			List<StudentRecord> observers = new ArrayList<>();
-			Integer counter = 0;
+		try {
+			node = new StudentRecord().formatter(input, errorFileName);
 
-			buildTree(node, counter, observers);
-			registerListeners(observers);
-		} else {
-			StudentRecord replicaNode = ifStudentRecordExists;
+		} catch (StudentRecordException e) {
+			e.printStackTrace();
+			throw new TreeHelperException(e.getMessage());
+		}
 
-			replicaNode.setFirstName(node.getFirstName());
-			replicaNode.setLastName(node.getLastName());
-			replicaNode.setMajor(node.getMajor());
-			replicaNode.setGradePointAverage(node.getGradePointAverage());
+		if (node != null) {
+			StudentRecord ifStudentRecordExists = TreeMap.get(0).search(node);
 
-			node.getSkills().forEach(skill -> {
-				if (!replicaNode.getSkills().contains(skill))
-					replicaNode.getSkills().add(skill);
-			});
+			if (ifStudentRecordExists == null) { // flow: Create
+				List<StudentRecord> observers = new ArrayList<>();
+				Integer counter = 0;
 
-			// tree.update(replicaNode);
-			System.out.println("\nUpdated Tree [id=" + replicaNode.tree.getId() + "]: " + replicaNode.toString());
+				buildTree(node, counter, observers);
+				registerListeners(observers);
+			} else {
+				StudentRecord replicaNode = ifStudentRecordExists;
 
-			replicaNode.notifyAll(Operation.INSERT);
+				replicaNode.setFirstName(node.getFirstName());
+				replicaNode.setLastName(node.getLastName());
+				replicaNode.setMajor(node.getMajor());
+				replicaNode.setGradePointAverage(node.getGradePointAverage());
+
+				node.getSkills().forEach(skill -> {
+					if (!replicaNode.getSkills().contains(skill))
+						replicaNode.getSkills().add(skill);
+				});
+
+				MyLogger.writeMessage("\nUpdated Tree [id=" + replicaNode.tree.getId() + "]: " + replicaNode.toString(),
+						MyLogger.DebugLevel.TREE_HELPER);
+
+				replicaNode.notifyAll(Operation.INSERT);
+			}
 		}
 
 	}
 
-	public void modify(String input) {
-		StudentRecord node = new StudentRecord().modifyFormatter(input);
+	/**
+	 * Method to modify node(s) based on the input from file.
+	 *
+	 * @param input
+	 * @throws TreeHelperException
+	 */
+	public void modify(String input) throws TreeHelperException {
+		StudentRecord node;
 
-		TreeMap.forEach((k, v) -> {
+		try {
+			node = new StudentRecord().modifyFormatter(input);
+		} catch (StudentRecordException e) {
+			e.printStackTrace();
+			throw new TreeHelperException(e.getMessage());
+		}
 
-			if (node.treeId == v.getId()) {
-				StudentRecord ifExistRecord = v.search(node);
+		if (node != null) {
+			TreeMap.forEach((k, v) -> {
 
-				StudentRecord replicaNode = ifExistRecord;
+				if (node.treeId == v.getId()) {
+					StudentRecord ifExistRecord = v.search(node);
 
-				if (replicaNode.getFirstName().equals(node.originalValue)) {
-					replicaNode.setFirstName(node.newValue);
-				} else if (replicaNode.getLastName().equals(node.originalValue)) {
-					replicaNode.setLastName(node.newValue);
-				} else if (replicaNode.getMajor().equals(node.originalValue)) {
-					replicaNode.setMajor(node.newValue);
-				} else if (replicaNode.getSkills().contains(node.originalValue)) {
-					Set<String> skills = replicaNode.getSkills();
+					StudentRecord replicaNode = ifExistRecord;
 
-					skills.remove(node.originalValue);
-					skills.add(node.newValue);
-					replicaNode.setSkills(skills);
+					if (replicaNode != null) {
+
+						if (replicaNode.getFirstName().equals(node.originalValue)) {
+							replicaNode.setFirstName(node.newValue);
+						} else if (replicaNode.getLastName().equals(node.originalValue)) {
+							replicaNode.setLastName(node.newValue);
+						} else if (replicaNode.getMajor().equals(node.originalValue)) {
+							replicaNode.setMajor(node.newValue);
+						} else if (replicaNode.getSkills().contains(node.originalValue)) {
+							Set<String> skills = replicaNode.getSkills();
+
+							skills.remove(node.originalValue);
+							skills.add(node.newValue);
+							replicaNode.setSkills(skills);
+						}
+
+						// tree.update(replicaNode);
+						MyLogger.writeMessage("\nUpdated Tree [id=" + node.treeId + "]: " + replicaNode.toString(),
+								MyLogger.DebugLevel.TREE_HELPER);
+
+						replicaNode.notifyAll(Operation.MODIFY);
+
+					}
 				}
-
-				// tree.update(replicaNode);
-				System.out.println("\nUpdated Tree [id=" + node.treeId + "]: " + replicaNode.toString());
-
-				replicaNode.notifyAll(Operation.MODIFY);
-			}
-		});
+			});
+		}
 	}
 
 }

@@ -5,7 +5,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import studentskills.exception.ErrorCode;
+import studentskills.exception.ResultException;
+import studentskills.exception.StudentRecordException;
+import studentskills.util.MyLogger;
+import studentskills.util.MyLogger.DebugLevel;
+import studentskills.util.Result;
+
+/**
+ * @author preetipriyam
+ *
+ */
 public class StudentRecord implements Cloneable, SubjectI, ObserverI {
+
+	protected static Result result = new Result();
+	protected static String errorFileName;
 
 	protected Integer bNumber;
 	protected StudentRecord left;
@@ -42,43 +56,167 @@ public class StudentRecord implements Cloneable, SubjectI, ObserverI {
 		this.major = studentRecord.getMajor();
 		this.gradePointAverage = studentRecord.getGradePointAverage();
 		this.skills = studentRecord.getSkills();
-
 	}
 
-	protected StudentRecord formatter(String input) {
+	/**
+	 * Method to validate the input arguments from input file.
+	 *
+	 * @param studentDetails
+	 * @param details
+	 * @return
+	 * @throws ResultException
+	 */
+	protected boolean validate(String[] studentDetails, String[] details) throws ResultException {
+
+		boolean temp = true;
+
+		String message = null;
+
+		if (studentDetails[0] == null || studentDetails[0].isEmpty()) {
+			message = "bNumber doesn't exist";
+			temp = false;
+		} else if (details.length < 1 || details[0] == null || details[0].isEmpty()) {
+			message = "First Name doesn't exist";
+			temp = false;
+		} else if (details.length < 2 || details[1] == null || details[1].isEmpty()) {
+			message = "Last Name doesn't exist";
+			temp = false;
+		} else if (details.length < 3 || details[2] == null || details[2].isEmpty()) {
+			message = "Grade point average doesn't exist";
+			temp = false;
+		} else if (details.length < 4 || details[3] == null || details[3].isEmpty()) {
+			message = "Major doesn't exist";
+			temp = false;
+		}
+
+		if (!temp) {
+			MyLogger.writeMessage(message, MyLogger.DebugLevel.STUDENT_RECORD);
+			StudentRecord.result.add(message);
+			StudentRecord.result.printToFile(errorFileName);
+		}
+
+		return temp;
+	}
+
+	/**
+	 * Methods to format the input.
+	 *
+	 * @param input
+	 * @param errorFileName
+	 * @return
+	 * @throws StudentRecordException
+	 */
+	protected StudentRecord formatter(String input, String errorFileName) throws StudentRecordException {
+		StudentRecord.errorFileName = errorFileName;
+
 		String[] studentDetails = input.split(":");
 		String[] details = studentDetails[1].split(",");
 
-		this.bNumber = Integer.parseInt(studentDetails[0]);
-		this.firstName = details[0];
-		this.lastName = details[1];
-		this.gradePointAverage = Double.parseDouble(details[2]);
-		this.major = details[3];
+		boolean flag;
 
-		if ((details.length - 4) > 10) {
-			// TODO: throw exception that number of skills > 10
-		} else {
-			for (int i = 4; i < details.length; i++)
-				this.skills.add(details[i]);
+		try {
+			flag = validate(studentDetails, details);
+		} catch (ResultException e) {
+			e.printStackTrace();
+			throw new StudentRecordException(ErrorCode.INVALID_IO + ": " + e.getMessage());
 		}
 
-		return this;
+		if (flag) {
+			this.bNumber = Integer.parseInt(studentDetails[0]);
+			this.firstName = details[0];
+			this.lastName = details[1];
+			this.gradePointAverage = Double.parseDouble(details[2]);
+			this.major = details[3];
+
+			if ((details.length - 4) > 10) {
+				// TODO: throw exception that number of skills > 10
+				throw new StudentRecordException(ErrorCode.SKILLS_RANGE_EXCEEDED,
+						"maximum number of skills cannot excced 10");
+			} else {
+				for (int i = 4; i < details.length; i++)
+					this.skills.add(details[i]);
+			}
+
+			return this;
+		}
+
+		return null;
 	}
 
-	protected StudentRecord modifyFormatter(String input) {
+	/**
+	 * Method to validate the input format from the modify.txt file.
+	 *
+	 * @param studentArray
+	 * @param studentDetails
+	 * @return
+	 * @throws ResultException
+	 */
+	protected boolean modifyValidate(String[] studentArray, String[] studentDetails) throws ResultException {
+
+		boolean temp = true;
+
+		String message = null;
+
+		if (studentArray.length < 1 || studentArray[0] == null || studentArray[0].isEmpty()) {
+			message = "treeId doesn't exist";
+			temp = false;
+		} else if (studentArray.length < 2 || studentArray[1] == null || studentArray[1].isEmpty()) {
+			message = "bNumber doesn't exist";
+			temp = false;
+		} else if (studentArray.length < 3 || studentArray[2] == null || studentArray[2].isEmpty()) {
+			message = "originalValue doesn't exist";
+			temp = false;
+		} else if (studentDetails.length < 1 || studentDetails[1] == null || studentDetails[1].isEmpty()) {
+			message = "newValue doesn't exist";
+			temp = false;
+		}
+
+		if (!temp) {
+			MyLogger.writeMessage(message, MyLogger.DebugLevel.STUDENT_RECORD);
+			StudentRecord.result.add(message);
+			StudentRecord.result.printToFile(errorFileName);
+		}
+
+		return temp;
+	}
+
+	/**
+	 * Method to format the input from modify.txt file.
+	 *
+	 * @param input
+	 * @return
+	 * @throws StudentRecordException
+	 */
+	protected StudentRecord modifyFormatter(String input) throws StudentRecordException {
 
 		// <REPLICA_ID>,<B_NUMBER>,<ORIG_VALUE>:<NEW_VALUE>
 		String[] studentDetails = input.split(":");
 		if (studentDetails.length == 2) {
 			String[] studentArray = studentDetails[0].split(",");
-			this.treeId = Integer.parseInt(studentArray[0]);
-			this.bNumber = Integer.parseInt(studentArray[1]);
-			this.originalValue = studentArray[2];
 
-			this.newValue = studentDetails[1];
+			boolean flag = false;
+
+			try {
+				flag = modifyValidate(studentArray, studentDetails);
+			} catch (ResultException e) {
+				e.printStackTrace();
+				throw new StudentRecordException(ErrorCode.INVALID_IO + ": " + e.getMessage());
+			}
+
+			if (flag) {
+				this.treeId = Integer.parseInt(studentArray[0]);
+				this.bNumber = Integer.parseInt(studentArray[1]);
+				this.originalValue = studentArray[2];
+
+				this.newValue = studentDetails[1];
+
+				return this;
+			}
+
+
 		}
 
-		return this;
+		return null;
 	}
 
 	public final StudentRecord getCopy() {
@@ -98,8 +236,10 @@ public class StudentRecord implements Cloneable, SubjectI, ObserverI {
 	}
 
 	/**
-	 * @implNote Using Prototype pattern to enable cloning of current instance
-	 * @return new StudentRecord
+	 * Using Prototype pattern to enable cloning of current instance
+	 *
+	 * @return
+	 * @throws CloneNotSupportedException
 	 */
 	public StudentRecord cloneStudentRecord() throws CloneNotSupportedException {
 		// cloning
@@ -112,7 +252,7 @@ public class StudentRecord implements Cloneable, SubjectI, ObserverI {
 	}
 
 	@Override
-	public void update(StudentRecord record) { // treeReplicaA
+	public void update(StudentRecord record) throws StudentRecordException { // treeReplicaA
 
 		this.setFirstName(record.getFirstName());
 		this.setLastName(record.getLastName());
@@ -121,15 +261,44 @@ public class StudentRecord implements Cloneable, SubjectI, ObserverI {
 		this.setSkills(record.getSkills());
 
 		if (record.operation.equals(Operation.INSERT))
-			this.tree.update(this);
-		else
-			System.out.println("Updated Tree [id:" + this.tree.getId() + "]: " + this.toString());
+			try {
+				this.tree.update(this);
+			} catch (ResultException e) {
+				MyLogger.writeMessage(e.getMessage(), DebugLevel.EXCEPTION);
+				e.printStackTrace();
+				throw new StudentRecordException(e.getMessage());
+			}
+		else {
+
+			String message = "Updated Tree [id:" + this.tree.getId() + "]: " + this.toString();
+			MyLogger.writeMessage(message, MyLogger.DebugLevel.STUDENT_RECORD);
+
+			this.tree.result.add(message);
+
+			try {
+				this.tree.result.printToFile(this.tree.outputFileName);
+			} catch (ResultException e) {
+				MyLogger.writeMessage(e.getMessage(), DebugLevel.EXCEPTION);
+				e.printStackTrace();
+				throw new StudentRecordException(e.getMessage());
+			}
+		}
 	}
 
+	/**
+	 * Method to iterating over all the observers for the current subjects.
+	 *
+	 * @param studentRecord
+	 */
 	public void notify(StudentRecord studentRecord) { // insert this to the observers
-		System.out.println("observing...");
+
 		this.observers.forEach(o -> {
-			o.update(studentRecord);// treeReplicaA
+			try {
+				o.update(studentRecord);
+			} catch (StudentRecordException e) {
+				MyLogger.writeMessage(e.getMessage(), DebugLevel.EXCEPTION);
+				e.printStackTrace();
+			}
 		});
 	}
 
